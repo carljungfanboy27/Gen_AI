@@ -4,6 +4,8 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.document_loaders import PyPDFLoader
 import os
 
+
+pdf_folder = "C:\Users\nilsp\OneDrive\Dokumente\AI-Tool papers\well-being"
 # Load and process PDFs
 def load_and_process_pdfs(pdf_folder):
     documents = []
