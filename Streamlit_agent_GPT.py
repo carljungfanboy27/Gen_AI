@@ -1,9 +1,38 @@
-import streamlit as st
+import os
 import openai
+import streamlit as st
+from llama_index.core import VectorStoreIndex
+from llama_index.core import StorageContext
+from llama_index.core import load_index_from_storage
 import re
 
+PERSIST_DIR = "../../Index/VectorStoreIndex/"
 # Set up OpenAI API key
 openai.api_key = "your_openai_api_key_here"
+
+
+# Title
+st.title("💬 Im your psychological assistent, how can I help you today?")
+
+
+# Sidebar for API Key input
+with st.sidebar:
+    openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
+    if openai_api_key:
+        os.environ["OPENAI_API_KEY"] = openai_api_key
+        st.success("API key set successfully!")
+    else:
+        st.warning("Please add your OpenAI API key to continue.")
+        st.stop()
+
+# Load the vector store index
+try:
+    storage_context = StorageContext.from_defaults(persist_dir=PERSIST_DIR)
+    vectorstoreindex = load_index_from_storage(storage_context=storage_context)
+    chat_engine = vectorstoreindex.as_chat_engine(chat_mode="condense_question", verbose=True)
+except Exception as e:
+    st.error(f"Failed to load the vector store index: {e}")
+    st.stop()
 
 # Function to generate chatbot response
 def generate_response(prompt):
@@ -33,9 +62,6 @@ def analyze_user_behavior(user_input):
     elif re.search(r"(bored|nothing to do|idle)", user_input, re.IGNORECASE):
         return "boredom"
     return "neutral"
-
-# Streamlit App
-st.title("GPT-3.5 Turbo Chatbot")
 
 st.write("Welcome! I am a thoughtful, empathetic chatbot here to assist you. Feel free to ask me anything.")
 
@@ -76,6 +102,20 @@ if st.session_state.conversation_memory:
     st.write("### Conversation History:")
     for msg in st.session_state.conversation_memory:
         st.text(msg)
+
+# If the last message is not from the assistant, generate a new response
+if st.session_state.messages[-1]["role"] != "assistant":
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            try:
+                response = chat_engine.chat(st.session_state.messages[-1]["content"])
+                st.write(response.response)
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": response.response}
+                )
+            except Exception as e:
+                st.error(f"Error generating response: {e}")
+
 
 # Option to clear conversation
 if st.button("End Conversation"):
