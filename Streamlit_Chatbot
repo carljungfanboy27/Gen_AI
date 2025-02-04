@@ -1,6 +1,6 @@
 pip install streamlit openai llama-index llama-index-experimental
 
-
+# import libraries
 import streamlit as st
 import openai
 from llama_index.core import VectorStoreIndex
